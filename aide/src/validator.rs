@@ -1,0 +1,85 @@
+use chrono::{DateTime, Utc};
+
+use crate::job::AideJob;
+
+/// Checks a parsed job against the `aide.yml` schema: required fields
+/// present, enum-valued fields hold one of their allowed values. Pure
+/// function — it has no opinion on what the watcher does with the result.
+pub fn validate(job: &AideJob) -> Result<(), Vec<String>> {
+    let mut errors = Vec::new();
+
+    if job.title.trim().is_empty() {
+        errors.push("title is required".to_string());
+    }
+    if job.id.trim().is_empty() {
+        errors.push("id is required".to_string());
+    }
+    if job.window.trim().is_empty() {
+        errors.push("window is required".to_string());
+    }
+    if job.root.trim().is_empty() {
+        errors.push("root is required".to_string());
+    }
+    if job.prompt_file.trim().is_empty() {
+        errors.push("prompt-file is required".to_string());
+    }
+
+    if job.status().is_none() {
+        errors.push(format!(
+            "status must be one of DRAFT, READY, RUNNING, DONE, got '{}'",
+            job.status
+        ));
+    }
+
+    if let Some(execute_after) = &job.execute_after
+        && execute_after.parse::<DateTime<Utc>>().is_err()
+    {
+        errors.push(format!(
+            "executeAfter must be an RFC3339 timestamp, got '{execute_after}'"
+        ));
+    }
+
+    for dir in &job.dirs {
+        if dir.name.trim().is_empty() {
+            errors.push("dirs[].name is required".to_string());
+        }
+        if dir.dir.trim().is_empty() {
+            errors.push("dirs[].dir is required".to_string());
+        }
+    }
+
+    for git in &job.git {
+        if git.name.trim().is_empty() {
+            errors.push("git[].name is required".to_string());
+        }
+        if git.dir.trim().is_empty() {
+            errors.push("git[].dir is required".to_string());
+        }
+    }
+
+    if let Some(codex) = &job.model.codex {
+        if codex.name.trim().is_empty() {
+            errors.push("model.codex.name is required".to_string());
+        }
+        if let Some(thinking) = &codex.thinking
+            && !matches!(thinking.as_str(), "HIGH" | "MEDIUM" | "LOW")
+        {
+            errors.push(format!(
+                "model.codex.thinking must be one of HIGH, MEDIUM, LOW, got '{thinking}'"
+            ));
+        }
+        if let Some(speed) = &codex.speed
+            && !matches!(speed.as_str(), "SLOW" | "MEDIUM" | "FAST")
+        {
+            errors.push(format!(
+                "model.codex.speed must be one of SLOW, MEDIUM, FAST, got '{speed}'"
+            ));
+        }
+    }
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(errors)
+    }
+}
