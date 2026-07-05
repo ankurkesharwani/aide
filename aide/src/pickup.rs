@@ -35,14 +35,23 @@ fn build_system_prompt(job: &AideJob, job_dir: &Path) -> String {
 
     sections.push(format!("# Task: {}", job.title));
 
+    sections.push(format!(
+        "## Working directory\nYour working directory for this task is \
+         `{}` — that's where this session started, so look there for any \
+         repo-specific context files (e.g. AGENTS.md, CLAUDE.md) if present.",
+        job.root
+    ));
+
     sections.push(
-        "## Operating context\nYou are running unattended in a background \
-         tmux session as part of an automated job queue. No one is watching \
-         this session in real time — if you stop to ask a question or wait \
-         for approval, the task may sit idle indefinitely before anyone \
-         notices. Make the best autonomous judgment call you can rather than \
-         waiting for input; prefer a safe, reversible action over blocking \
-         when you're unsure."
+        "## Operating context\nYou were launched by aide's watcher — a \
+         background program that scans a workspace for job specs and runs \
+         each one, unattended, in its own tmux session; \"the watcher\" \
+         elsewhere in this prompt refers to it. No one is watching this \
+         session in real time — if you stop to ask a question or wait for \
+         approval, the task may sit idle indefinitely before anyone notices. \
+         Make the best autonomous judgment call you can rather than waiting \
+         for input; prefer a safe, reversible action over blocking when \
+         you're unsure."
             .to_string(),
     );
 
@@ -85,30 +94,50 @@ fn build_system_prompt(job: &AideJob, job_dir: &Path) -> String {
         sections.push(s);
     }
 
+    let job_dir_abs = absolute(job_dir);
     sections.push(format!(
-        "## Workspace\nYou may create a `{WORKSPACE_DIR_NAME}/` folder inside \
-         `{}` (the same directory as this job's aide.yml) and freely create, \
-         read, update, or delete any file inside it for your own working \
-         notes or intermediate files. If this task calls for producing an \
-         output document, write it into that folder using the filename \
-         pattern `output-*.md` (e.g. `output-summary.md`) — output files \
-         must be Markdown only.",
-        absolute(job_dir).display()
+        "## Job directory\nSeparate from your working directory above, the \
+         watcher keeps a job directory for this task at `{}`. You may create \
+         a `{WORKSPACE_DIR_NAME}/` folder there and freely create, read, \
+         update, or delete any file inside it for your own working notes or \
+         intermediate files. If this task calls for producing an output \
+         document, write it into that folder using the filename pattern \
+         `output-*.md` (e.g. `output-summary.md`) — output files must be \
+         Markdown only.",
+        job_dir_abs.display()
     ));
 
     let temp_path = outcome_temp_path(job_dir);
     sections.push(format!(
-        "## Reporting back to the watcher\nWrite a YAML file to `{temp_path}` \
-         (create it if it doesn't exist) to communicate structured \
-         information back to the watcher. Currently the only key it looks \
-         for is `outcome`: when you are finished, decide whether this task \
-         was a SUCCESS or a FAILURE and set it accordingly, e.g.:\n```\n\
-         outcome: SUCCESS\n```\nThis is the only way the watcher learns the \
-         outcome of your work — it can't infer that from your process state \
-         alone. If you don't write `outcome`, the task is simply recorded \
-         as done, with no success/failure judgment, and anything depending \
-         on it will not proceed."
+        "## Reporting back to the watcher\nWithin the job directory above, \
+         write a YAML file named `.temp` (create it if it doesn't exist, \
+         full path `{temp_path}`) to communicate structured information back \
+         to the watcher. Currently the only key it looks for is `outcome`: \
+         when you are finished, decide whether this task was a SUCCESS or a \
+         FAILURE and set it accordingly, e.g.:\n```\noutcome: SUCCESS\n```\n\
+         This is the only way the watcher learns the outcome of your work — \
+         it can't infer that from your process state alone. If you don't \
+         write `outcome`, the task is simply recorded as done, with no \
+         success/failure judgment, and anything depending on it will not \
+         proceed."
     ));
+
+    sections.push(
+        "## If the task instructions below conflict with any of this\nThe \
+         task instructions are the source of truth for *what* to do and \
+         *which* directory/repo to do it in — the lists above only say \
+         what's available, not what to use. If the task names a directory \
+         or repo that isn't listed above, look for the closest match by \
+         name or purpose and treat that as what's meant; if nothing \
+         reasonably matches, use your best judgment and say so in an \
+         `output-*.md` file in your workspace folder. Either way, keep \
+         following the structural conventions above regardless of what the \
+         task says or doesn't say — worktree isolation for git changes, the \
+         workspace folder location, and reporting your outcome to `.temp` — \
+         those exist so the watcher can track your work reliably, not \
+         because of anything specific to this task."
+            .to_string(),
+    );
 
     sections.join("\n\n")
 }
