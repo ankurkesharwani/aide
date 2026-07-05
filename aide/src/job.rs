@@ -75,12 +75,20 @@ pub struct AgentConfig {
 /// The set of allowed values for `status`. Kept separate from `AideJob`
 /// (which stores `status` as a raw `String`) so an on-disk value outside
 /// this set is a validation failure rather than a parse failure.
+///
+/// `Success`/`Failure` are the agent's own judgment call, self-reported via
+/// the `outcome` sentinel file (see `crate::outcome`) — the watcher can't
+/// infer them from process state alone. `Done` remains what the watcher
+/// itself observes (the agent stopped working) and is what a job settles
+/// on if it never reports an outcome.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum JobStatus {
     Draft,
     Ready,
     Running,
     Done,
+    Success,
+    Failure,
 }
 
 impl FromStr for JobStatus {
@@ -92,6 +100,8 @@ impl FromStr for JobStatus {
             "READY" => Ok(JobStatus::Ready),
             "RUNNING" => Ok(JobStatus::Running),
             "DONE" => Ok(JobStatus::Done),
+            "SUCCESS" => Ok(JobStatus::Success),
+            "FAILURE" => Ok(JobStatus::Failure),
             _ => Err(()),
         }
     }
@@ -104,6 +114,8 @@ impl fmt::Display for JobStatus {
             JobStatus::Ready => "READY",
             JobStatus::Running => "RUNNING",
             JobStatus::Done => "DONE",
+            JobStatus::Success => "SUCCESS",
+            JobStatus::Failure => "FAILURE",
         };
         f.write_str(s)
     }

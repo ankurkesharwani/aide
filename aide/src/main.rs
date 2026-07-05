@@ -6,6 +6,7 @@ mod poll;
 mod runtime;
 mod scanner;
 mod status_writer;
+mod temp;
 mod tmux;
 mod validator;
 mod watcher;

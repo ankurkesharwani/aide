@@ -33,6 +33,14 @@ pub fn done(job_id: &str) {
     line("INFO", job_id, "done");
 }
 
+pub fn success(job_id: &str) {
+    line("INFO", job_id, "success");
+}
+
+pub fn failure(job_id: &str) {
+    line("WARN", job_id, "failure");
+}
+
 pub fn lost(job_id: &str, reason: &str) {
     line("ERROR", job_id, &format!("lost/unreachable: {reason}"));
 }

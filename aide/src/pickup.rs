@@ -9,11 +9,15 @@ use crate::logging;
 use crate::runtime::RuntimeInfo;
 use crate::scanner::DiscoveredJob;
 use crate::status_writer;
+use crate::temp;
 use crate::tmux;
 
-/// Concatenates the job's `dirs`/`git` context and resolved `agent`
-/// settings into a system prompt preamble for the job's agent.
-fn build_system_prompt(job: &AideJob) -> String {
+/// Concatenates the job's `dirs`/`git` context, resolved `agent` settings,
+/// and the `.temp`-reporting instruction into a system prompt preamble for
+/// the job's agent. `job_dir` is used for that instruction only — the
+/// agent's cwd is `job.root`, which is generally a different directory, so
+/// the `.temp` file's path must be spelled out in full.
+fn build_system_prompt(job: &AideJob, job_dir: &Path) -> String {
     let mut sections = Vec::new();
 
     sections.push(format!("# Task: {}", job.title));
@@ -49,6 +53,23 @@ fn build_system_prompt(job: &AideJob) -> String {
         sections.push(kind.strategy().describe(config));
     }
 
+    let job_dir_abs = job_dir
+        .canonicalize()
+        .unwrap_or_else(|_| job_dir.to_path_buf());
+    sections.push(format!(
+        "## Reporting back to the watcher\nWrite a YAML file to `{}` (create \
+         it if it doesn't exist) to communicate structured information back \
+         to the watcher. Currently the only key it looks for is `outcome`: \
+         when you are finished, decide whether this task was a SUCCESS or a \
+         FAILURE and set it accordingly, e.g.:\n```\noutcome: SUCCESS\n```\n\
+         This is the only way the watcher learns the outcome of your work — \
+         it can't infer that from your process state alone. If you don't \
+         write `outcome`, the task is simply recorded as done, with no \
+         success/failure judgment, and anything depending on it will not \
+         proceed.",
+        temp::path_for(&job_dir_abs).display()
+    ));
+
     sections.join("\n\n")
 }
 
@@ -59,7 +80,7 @@ fn assemble_prompt(job: &AideJob, job_dir: &Path) -> Result<String> {
         .with_context(|| format!("failed to read prompt-file {}", prompt_path.display()))?;
     Ok(format!(
         "{}\n\n---\n\n{}",
-        build_system_prompt(job),
+        build_system_prompt(job, job_dir),
         prompt_body
     ))
 }

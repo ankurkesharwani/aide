@@ -26,7 +26,7 @@ pub fn validate(job: &AideJob) -> Result<(), Vec<String>> {
 
     if job.status().is_none() {
         errors.push(format!(
-            "status must be one of DRAFT, READY, RUNNING, DONE, got '{}'",
+            "status must be one of DRAFT, READY, RUNNING, DONE, SUCCESS, FAILURE, got '{}'",
             job.status
         ));
     }

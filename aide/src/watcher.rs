@@ -115,10 +115,15 @@ impl Watcher {
                     }
                 }
                 JobStatus::Ready => {
+                    // Only a dependency's own agent-reported SUCCESS
+                    // satisfies it — DONE (no outcome reported) or FAILURE
+                    // leaves the dependent queued indefinitely, surfacing
+                    // as a visible "queued" job rather than proceeding on
+                    // an unknown or failed upstream result.
                     let deps_done = job
                         .dependencies
                         .iter()
-                        .all(|dep_id| statuses.get(dep_id.as_str()) == Some(&JobStatus::Done));
+                        .all(|dep_id| statuses.get(dep_id.as_str()) == Some(&JobStatus::Success));
                     let time_ok = match &job.execute_after {
                         Some(ts) => ts
                             .parse::<chrono::DateTime<Utc>>()
@@ -136,7 +141,7 @@ impl Watcher {
                         logging::queued(&job.id);
                     }
                 }
-                JobStatus::Draft | JobStatus::Done => {}
+                JobStatus::Draft | JobStatus::Done | JobStatus::Success | JobStatus::Failure => {}
             }
         }
     }

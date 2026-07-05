@@ -7,6 +7,7 @@ use crate::logging;
 use crate::runtime::RuntimeInfo;
 use crate::scanner::DiscoveredJob;
 use crate::status_writer;
+use crate::temp;
 use crate::tmux;
 
 /// One poll of a job whose `aide.yml` says `RUNNING`. Doubles as both the
@@ -79,8 +80,17 @@ pub fn poll_running_job(session: &str, discovered: &DiscoveredJob) -> Result<()>
         runtime.save(&discovered.dir)?;
 
         if completed {
-            status_writer::set_status(&discovered.spec_path, JobStatus::Done)?;
-            logging::done(job_id);
+            // The agent's own SUCCESS/FAILURE judgment call, self-reported via
+            // the `outcome` key of the `.temp` file (see `crate::temp`), takes
+            // precedence; a job that finished without reporting one just
+            // settles on DONE.
+            let final_status = temp::read_outcome(&discovered.dir).unwrap_or(JobStatus::Done);
+            status_writer::set_status(&discovered.spec_path, final_status)?;
+            match final_status {
+                JobStatus::Success => logging::success(job_id),
+                JobStatus::Failure => logging::failure(job_id),
+                _ => logging::done(job_id),
+            }
         }
     } else {
         // Statusline briefly absent (e.g. right after launch); still persist
