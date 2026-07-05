@@ -97,7 +97,7 @@ impl Watcher {
         }
 
         // Status of every validated, non-colliding job, keyed by id — used
-        // to resolve `dependency` lists.
+        // to resolve `dependencies` lists.
         let statuses: HashMap<&str, JobStatus> = unique
             .iter()
             .filter_map(|d| d.job.status().map(|s| (d.job.id.as_str(), s)))
@@ -116,7 +116,7 @@ impl Watcher {
                 }
                 JobStatus::Ready => {
                     let deps_done = job
-                        .dependency
+                        .dependencies
                         .iter()
                         .all(|dep_id| statuses.get(dep_id.as_str()) == Some(&JobStatus::Done));
                     let time_ok = match &job.execute_after {

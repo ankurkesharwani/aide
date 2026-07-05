@@ -17,7 +17,7 @@ pub struct AideJob {
     pub window: String,
     pub status: String,
     #[serde(default)]
-    pub dependency: Vec<String>,
+    pub dependencies: Vec<String>,
     #[serde(
         rename = "executeAfter",
         skip_serializing_if = "Option::is_none",
