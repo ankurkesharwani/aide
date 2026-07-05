@@ -146,6 +146,23 @@ fn outcome_temp_path(job_dir: &Path) -> String {
     temp::path_for(&absolute(job_dir)).display().to_string()
 }
 
+/// Every directory this job's agent will actually operate in: `root`, each
+/// `dirs` entry, and each `git` entry's checkout and (if given) worktree.
+/// Used to pre-trust them all with the backend before launch (see
+/// `AgentStrategy::prepare`) — cheaper to over-include a few than to miss
+/// one and have the job hang on an onboarding prompt.
+fn job_paths(job: &AideJob) -> Vec<PathBuf> {
+    let mut paths = vec![PathBuf::from(&job.root)];
+    paths.extend(job.dirs.iter().map(|d| PathBuf::from(&d.dir)));
+    for g in &job.git {
+        paths.push(PathBuf::from(&g.dir));
+        if let Some(worktree) = &g.worktree {
+            paths.push(PathBuf::from(worktree));
+        }
+    }
+    paths
+}
+
 /// Embeds the contents of `prompt-file` after the system prompt, followed
 /// by a trailing reminder of the outcome-reporting instruction. The
 /// reminder is deliberately repeated at the very end, immediately before
@@ -177,6 +194,11 @@ pub fn pickup(session: &str, discovered: &DiscoveredJob) -> Result<()> {
         .backend()
         .context("job has no agent backend configured under `agent`")?;
     let strategy = kind.strategy();
+
+    let paths = job_paths(job);
+    strategy
+        .prepare(&paths.iter().map(PathBuf::as_path).collect::<Vec<_>>())
+        .context("failed to prepare agent backend")?;
 
     let prompt = assemble_prompt(job, &discovered.dir)?;
     let command = strategy.build_command(config, &prompt);

@@ -9,6 +9,10 @@ mod codex;
 
 pub use codex::CodexAgent;
 
+use std::path::Path;
+
+use anyhow::Result;
+
 use crate::job::AgentConfig;
 
 /// Which agent CLI backend a job targets.
@@ -78,6 +82,15 @@ pub trait AgentStrategy {
 
     /// Independently detect an "awaiting approval" prompt in pane text.
     fn detect_awaiting_approval(&self, pane_text: &str) -> bool;
+
+    /// One-time setup this backend needs before the command from
+    /// `build_command` is launched — e.g. pre-approving directories `paths`
+    /// so startup doesn't block on a onboarding prompt no CLI flag can
+    /// suppress. Default no-op; only backends that need this override it.
+    fn prepare(&self, paths: &[&Path]) -> Result<()> {
+        let _ = paths;
+        Ok(())
+    }
 }
 
 /// Escapes `s` for safe inclusion as a single word in a POSIX shell command

@@ -30,10 +30,13 @@ pub fn current_session() -> Result<String> {
 }
 
 /// Create a new window in `session`, named `window`, with its starting
-/// working directory set to `cwd`, running `shell_command`.
+/// working directory set to `cwd`, running `shell_command`. Uses `-d` so
+/// the watcher doesn't yank the user's focus to every job window it opens
+/// — they can still switch to it by hand at any time.
 pub fn new_window(session: &str, window: &str, cwd: &Path, shell_command: &str) -> Result<()> {
     run(&[
         "new-window",
+        "-d",
         "-t",
         session,
         "-n",
