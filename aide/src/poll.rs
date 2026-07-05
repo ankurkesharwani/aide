@@ -74,7 +74,18 @@ pub fn poll_running_job(session: &str, discovered: &DiscoveredJob) -> Result<()>
             runtime.seen_working = true;
         }
 
-        let completed = info.state == AgentState::Ready && runtime.seen_working;
+        // `seen_working` is the primary signal (a `Ready` seen right after
+        // `Starting`, before any `Working`, just means the agent hasn't
+        // begun yet). But on a coarse poll interval a fast task can run
+        // through its entire `Starting -> Working -> Ready` lifecycle
+        // between two polls, so the watcher never samples `Working` at
+        // all — `seen_working` would then wrongly stay false forever. A
+        // `.temp` outcome is independent, stronger evidence: the agent
+        // only writes it as its very last action, so its presence means
+        // real work happened even if polling missed the `Working` state.
+        let outcome_reported = temp::read_outcome(&discovered.dir).is_some();
+        let completed =
+            info.state == AgentState::Ready && (runtime.seen_working || outcome_reported);
         runtime.state = Some(info.state);
         runtime.updated_at = Utc::now();
         runtime.save(&discovered.dir)?;

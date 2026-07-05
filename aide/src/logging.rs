@@ -40,7 +40,12 @@ pub fn scheduled(job_id: &str, window: &str) {
 }
 
 pub fn failed_to_schedule(job_id: &str, reason: &str) {
-    line("WARN", YELLOW, job_id, &format!("failed to schedule: {reason}"));
+    line(
+        "WARN",
+        YELLOW,
+        job_id,
+        &format!("failed to schedule: {reason}"),
+    );
 }
 
 pub fn running(job_id: &str, window: &str) {

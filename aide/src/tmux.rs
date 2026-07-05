@@ -90,7 +90,10 @@ fn child_pids(pid: u32) -> Vec<u32> {
     };
     for entry in entries.flatten() {
         if let Ok(text) = std::fs::read_to_string(entry.path().join("children")) {
-            children.extend(text.split_whitespace().filter_map(|s| s.parse::<u32>().ok()));
+            children.extend(
+                text.split_whitespace()
+                    .filter_map(|s| s.parse::<u32>().ok()),
+            );
         }
     }
     children

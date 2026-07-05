@@ -195,6 +195,11 @@ pub fn pickup(session: &str, discovered: &DiscoveredJob) -> Result<()> {
         .context("job has no agent backend configured under `agent`")?;
     let strategy = kind.strategy();
 
+    // Clear any stale `.temp` left over from a previous run in this
+    // directory — otherwise a leftover `outcome` could be mistaken for
+    // this run's completion signal the moment it reaches `Ready`.
+    let _ = std::fs::remove_file(temp::path_for(&discovered.dir));
+
     let paths = job_paths(job);
     strategy
         .prepare(&paths.iter().map(PathBuf::as_path).collect::<Vec<_>>())

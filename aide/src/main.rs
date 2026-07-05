@@ -27,4 +27,3 @@ fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
     watcher::run(cli.workspace)
 }
-
