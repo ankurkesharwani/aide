@@ -150,8 +150,9 @@ on its next pass.
 
 Early, single-user project, evolving quickly. Codex is the only supported
 agent backend today, with room to add others (Claude, Gemini, ...) later.
-There's no scaffolding CLI yet for generating new jobs — you author
-`aide.yml`/prompt files by hand for now.
+`aide` is just the watcher for now — you author `aide.yml`/prompt files by
+hand; job-scaffolding and other CLI conveniences are expected to land as
+subcommands on the same binary later.
 
 ## License
 

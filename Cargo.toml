@@ -1,6 +1,5 @@
 [workspace]
 members = [
     "aide",
-    "aide-cli",
 ]
 resolver = "2"
