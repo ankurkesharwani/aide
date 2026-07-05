@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use chrono::Utc;
@@ -12,11 +12,24 @@ use crate::status_writer;
 use crate::temp;
 use crate::tmux;
 
-/// Concatenates the job's `dirs`/`git` context and the `.temp`-reporting
-/// instruction into a system prompt preamble for the job's agent. `job_dir`
-/// is used for that instruction only — the agent's cwd is `job.root`,
-/// which is generally a different directory, so the `.temp` file's path
-/// must be spelled out in full.
+/// Name of the scratch folder an agent may create inside a job's directory
+/// (see the "Workspace" section of `build_system_prompt`). Purely a prompt
+/// convention — the watcher itself never reads or writes it.
+const WORKSPACE_DIR_NAME: &str = "workspace";
+
+/// Absolute form of `job_dir`. The agent's cwd is `job.root`, which is
+/// generally a different directory than the job's own directory, so any
+/// path we tell it to read/write there must be spelled out in full rather
+/// than left relative.
+fn absolute(job_dir: &Path) -> PathBuf {
+    job_dir
+        .canonicalize()
+        .unwrap_or_else(|_| job_dir.to_path_buf())
+}
+
+/// Concatenates the job's `dirs`/`git` context, the workspace-folder
+/// convention, and the `.temp`-reporting instruction into a system prompt
+/// preamble for the job's agent.
 fn build_system_prompt(job: &AideJob, job_dir: &Path) -> String {
     let mut sections = Vec::new();
 
@@ -34,7 +47,11 @@ fn build_system_prompt(job: &AideJob, job_dir: &Path) -> String {
     );
 
     if !job.dirs.is_empty() {
-        let mut s = String::from("## Available directories\n");
+        let mut s = String::from(
+            "## Available directories\nYou have access to these directories. \
+             Use them exactly as the task instructions below say to — this \
+             list only tells you what's available, not what to do with it.\n",
+        );
         for d in &job.dirs {
             s.push_str(&format!("- {} ({})", d.name, d.dir));
             if let Some(desc) = &d.description {
@@ -46,7 +63,15 @@ fn build_system_prompt(job: &AideJob, job_dir: &Path) -> String {
     }
 
     if !job.git.is_empty() {
-        let mut s = String::from("## Available git repos\n");
+        let mut s = String::from(
+            "## Available git repos\nYou have access to these git \
+             repositories, to be used as the task instructions below say to. \
+             If the task requires making changes to one of them, do the work \
+             in a new worktree rather than directly on the primary checkout \
+             or on `master`: use the `worktree` path shown for that repo \
+             below if one is given, otherwise create one yourself, and \
+             branch it from `master` with a new branch named for this task.\n",
+        );
         for g in &job.git {
             s.push_str(&format!("- {} ({})", g.name, g.dir));
             if let Some(desc) = &g.description {
@@ -59,6 +84,17 @@ fn build_system_prompt(job: &AideJob, job_dir: &Path) -> String {
         }
         sections.push(s);
     }
+
+    sections.push(format!(
+        "## Workspace\nYou may create a `{WORKSPACE_DIR_NAME}/` folder inside \
+         `{}` (the same directory as this job's aide.yml) and freely create, \
+         read, update, or delete any file inside it for your own working \
+         notes or intermediate files. If this task calls for producing an \
+         output document, write it into that folder using the filename \
+         pattern `output-*.md` (e.g. `output-summary.md`) — output files \
+         must be Markdown only.",
+        absolute(job_dir).display()
+    ));
 
     let temp_path = outcome_temp_path(job_dir);
     sections.push(format!(
@@ -78,10 +114,7 @@ fn build_system_prompt(job: &AideJob, job_dir: &Path) -> String {
 }
 
 fn outcome_temp_path(job_dir: &Path) -> String {
-    let job_dir_abs = job_dir
-        .canonicalize()
-        .unwrap_or_else(|_| job_dir.to_path_buf());
-    temp::path_for(&job_dir_abs).display().to_string()
+    temp::path_for(&absolute(job_dir)).display().to_string()
 }
 
 /// Embeds the contents of `prompt-file` after the system prompt, followed
