@@ -57,26 +57,6 @@ pub fn validate(job: &AideJob) -> Result<(), Vec<String>> {
         }
     }
 
-    if let Some(codex) = &job.model.codex {
-        if codex.name.trim().is_empty() {
-            errors.push("model.codex.name is required".to_string());
-        }
-        if let Some(thinking) = &codex.thinking
-            && !matches!(thinking.as_str(), "HIGH" | "MEDIUM" | "LOW")
-        {
-            errors.push(format!(
-                "model.codex.thinking must be one of HIGH, MEDIUM, LOW, got '{thinking}'"
-            ));
-        }
-        if let Some(speed) = &codex.speed
-            && !matches!(speed.as_str(), "SLOW" | "MEDIUM" | "FAST")
-        {
-            errors.push(format!(
-                "model.codex.speed must be one of SLOW, MEDIUM, FAST, got '{speed}'"
-            ));
-        }
-    }
-
     if errors.is_empty() {
         Ok(())
     } else {

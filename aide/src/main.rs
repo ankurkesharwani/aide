@@ -1,3 +1,4 @@
+mod agent;
 mod job;
 mod logging;
 mod pickup;
@@ -5,7 +6,6 @@ mod poll;
 mod runtime;
 mod scanner;
 mod status_writer;
-mod statusline;
 mod tmux;
 mod validator;
 mod watcher;

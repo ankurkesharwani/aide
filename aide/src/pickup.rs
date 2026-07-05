@@ -3,16 +3,16 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use chrono::Utc;
 
+use crate::agent::AgentState;
 use crate::job::{AideJob, JobStatus};
 use crate::logging;
 use crate::runtime::RuntimeInfo;
 use crate::scanner::DiscoveredJob;
 use crate::status_writer;
-use crate::statusline::AgentState;
 use crate::tmux;
 
-/// Concatenates the job's `dirs`/`git` context and resolved `model`
-/// settings into a system prompt preamble for Codex.
+/// Concatenates the job's `dirs`/`git` context and resolved `agent`
+/// settings into a system prompt preamble for the job's agent.
 fn build_system_prompt(job: &AideJob) -> String {
     let mut sections = Vec::new();
 
@@ -45,15 +45,8 @@ fn build_system_prompt(job: &AideJob) -> String {
         sections.push(s);
     }
 
-    if let Some(codex) = &job.model.codex {
-        let mut s = format!("## Model\ncodex model: {}", codex.name);
-        if let Some(thinking) = &codex.thinking {
-            s.push_str(&format!(", thinking: {thinking}"));
-        }
-        if let Some(speed) = &codex.speed {
-            s.push_str(&format!(", speed: {speed}"));
-        }
-        sections.push(s);
+    if let Some((kind, config)) = job.backend() {
+        sections.push(kind.strategy().describe(config));
     }
 
     sections.join("\n\n")
@@ -71,25 +64,6 @@ fn assemble_prompt(job: &AideJob, job_dir: &Path) -> Result<String> {
     ))
 }
 
-/// Builds the shell command used to launch Codex with the job's resolved
-/// model parameters.
-fn codex_command(job: &AideJob) -> String {
-    let mut cmd = String::from("codex");
-    if let Some(codex) = &job.model.codex {
-        cmd.push_str(&format!(" -m {}", codex.name));
-        if let Some(thinking) = &codex.thinking {
-            cmd.push_str(&format!(
-                " -c model_reasoning_effort={}",
-                thinking.to_lowercase()
-            ));
-        }
-        if let Some(speed) = &codex.speed {
-            cmd.push_str(&format!(" -c model_speed={}", speed.to_lowercase()));
-        }
-    }
-    cmd
-}
-
 /// Picks up an eligible, validated, non-colliding `READY` job: builds and
 /// sends its prompt, opens its tmux window, writes the initial
 /// `runtime.yml`, makes `aide.yml` read-only, and flips `status` to
@@ -98,8 +72,13 @@ pub fn pickup(session: &str, discovered: &DiscoveredJob) -> Result<()> {
     let job = &discovered.job;
     let root = Path::new(&job.root);
 
+    let (kind, config) = job
+        .backend()
+        .context("job has no agent backend configured under `agent`")?;
+    let strategy = kind.strategy();
+
     let prompt = assemble_prompt(job, &discovered.dir)?;
-    let command = codex_command(job);
+    let command = strategy.build_command(config);
 
     tmux::new_window(session, &job.window, root, &command)
         .with_context(|| format!("failed to open tmux window '{}'", job.window))?;
@@ -108,10 +87,9 @@ pub fn pickup(session: &str, discovered: &DiscoveredJob) -> Result<()> {
 
     let runtime = RuntimeInfo {
         window: job.window.clone(),
+        agent: Some(kind.name().to_string()),
         session_id: None,
-        model: job.model.codex.as_ref().map(|c| c.name.clone()),
-        thinking: job.model.codex.as_ref().and_then(|c| c.thinking.clone()),
-        speed: job.model.codex.as_ref().and_then(|c| c.speed.clone()),
+        model: None,
         profile: None,
         cwd: Some(job.root.clone()),
         state: Some(AgentState::Starting),

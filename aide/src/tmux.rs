@@ -74,9 +74,9 @@ fn pane_pid(session: &str, window: &str) -> Option<u32> {
         .ok()
 }
 
-fn cmdline_contains_codex(pid: u32) -> bool {
+fn cmdline_matches(pid: u32, matches: &impl Fn(&str) -> bool) -> bool {
     std::fs::read_to_string(format!("/proc/{pid}/cmdline"))
-        .map(|s| s.to_lowercase().contains("codex"))
+        .map(|s| matches(&s.to_lowercase()))
         .unwrap_or(false)
 }
 
@@ -93,12 +93,13 @@ fn child_pids(pid: u32) -> Vec<u32> {
     children
 }
 
-/// Whether Codex (as opposed to a bare shell) is running in
-/// `session:window`. Walks the pane's whole process tree rather than just
-/// its immediate foreground command — Codex transiently shells out to
-/// tool subprocesses (git, bash, ...) while `Working`, and checking only
-/// the foreground command would misreport those moments as "lost".
-pub fn pane_runs_codex(session: &str, window: &str) -> bool {
+/// Whether the job's agent backend (as opposed to a bare shell) is running
+/// in `session:window`, per `matches` (see `AgentStrategy::process_matches`).
+/// Walks the pane's whole process tree rather than just its immediate
+/// foreground command — agents transiently shell out to tool subprocesses
+/// (git, bash, ...) while working, and checking only the foreground command
+/// would misreport those moments as "lost".
+pub fn pane_runs_process(session: &str, window: &str, matches: impl Fn(&str) -> bool) -> bool {
     let Some(root_pid) = pane_pid(session, window) else {
         return false;
     };
@@ -108,7 +109,7 @@ pub fn pane_runs_codex(session: &str, window: &str) -> bool {
         if !seen.insert(pid) {
             continue;
         }
-        if cmdline_contains_codex(pid) {
+        if cmdline_matches(pid, &matches) {
             return true;
         }
         stack.extend(child_pids(pid));

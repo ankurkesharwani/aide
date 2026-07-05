@@ -1,12 +1,12 @@
 use anyhow::Result;
 use chrono::Utc;
 
+use crate::agent::AgentState;
 use crate::job::JobStatus;
 use crate::logging;
 use crate::runtime::RuntimeInfo;
 use crate::scanner::DiscoveredJob;
 use crate::status_writer;
-use crate::statusline::{self, AgentState};
 use crate::tmux;
 
 /// One poll of a job whose `aide.yml` says `RUNNING`. Doubles as both the
@@ -18,6 +18,14 @@ pub fn poll_running_job(session: &str, discovered: &DiscoveredJob) -> Result<()>
     let job_id = &discovered.job.id;
     let mut runtime = RuntimeInfo::load(&discovered.dir)?;
 
+    let Some((kind, _config)) = discovered.job.backend() else {
+        // A RUNNING job should always have an agent backend — pickup
+        // requires one — but guard rather than panic if aide.yml was
+        // hand-edited after pickup.
+        return Ok(());
+    };
+    let strategy = kind.strategy();
+
     if !tmux::window_exists(session, &runtime.window) {
         mark_lost(
             session,
@@ -28,12 +36,14 @@ pub fn poll_running_job(session: &str, discovered: &DiscoveredJob) -> Result<()>
         return Ok(());
     }
 
-    if !tmux::pane_runs_codex(session, &runtime.window) {
+    if !tmux::pane_runs_process(session, &runtime.window, |cmdline| {
+        strategy.process_matches(cmdline)
+    }) {
         mark_lost(
             session,
             discovered,
             &mut runtime,
-            "window is no longer running codex",
+            "window is no longer running its agent",
         )?;
         return Ok(());
     }
@@ -47,12 +57,12 @@ pub fn poll_running_job(session: &str, discovered: &DiscoveredJob) -> Result<()>
     let pane_text = tmux::capture_pane(session, &runtime.window)?;
 
     let was_awaiting_approval = runtime.awaiting_approval;
-    runtime.awaiting_approval = statusline::detect_awaiting_approval(&pane_text);
+    runtime.awaiting_approval = strategy.detect_awaiting_approval(&pane_text);
     if runtime.awaiting_approval && !was_awaiting_approval {
         logging::awaiting_approval(job_id);
     }
 
-    if let Some(info) = statusline::parse_statusline(&pane_text) {
+    if let Some(info) = strategy.parse_status(&pane_text) {
         runtime.cwd = Some(info.cwd);
         runtime.model = Some(info.model);
         runtime.profile = Some(info.profile);

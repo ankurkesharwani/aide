@@ -4,6 +4,8 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
+use crate::agent::AgentKind;
+
 /// Raw representation of an `aide.yml` job spec. Fields that the schema
 /// draft (`docs/aide.yml`) documents as enums are kept as plain `String`s
 /// here so a job with an invalid value still parses — the validator is
@@ -28,7 +30,7 @@ pub struct AideJob {
     #[serde(default)]
     pub git: Vec<GitEntry>,
     #[serde(default)]
-    pub model: ModelConfig,
+    pub agent: AgentBackends,
     #[serde(rename = "prompt-file")]
     pub prompt_file: String,
 }
@@ -51,19 +53,23 @@ pub struct GitEntry {
     pub worktree: Option<String>,
 }
 
+/// The `agent:` block of `aide.yml`. `codex` is the only backend for now;
+/// `claude`, `gemini`, etc. are expected to join as sibling keys later
+/// (see `docs/spec.md`).
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
-pub struct ModelConfig {
+pub struct AgentBackends {
     #[serde(default)]
-    pub codex: Option<CodexModel>,
+    pub codex: Option<AgentConfig>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct CodexModel {
-    pub name: String,
+/// An agent backend's resolved config: the command-line arguments used to
+/// invoke it. Shared across backends — how those arguments are assembled
+/// into a launch command and described in the system prompt is up to each
+/// backend's `AgentStrategy` (see `crate::agent`).
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+pub struct AgentConfig {
     #[serde(default)]
-    pub thinking: Option<String>,
-    #[serde(default)]
-    pub speed: Option<String>,
+    pub arguments: Vec<String>,
 }
 
 /// The set of allowed values for `status`. Kept separate from `AideJob`
@@ -106,6 +112,17 @@ impl fmt::Display for JobStatus {
 impl AideJob {
     pub fn status(&self) -> Option<JobStatus> {
         self.status.parse().ok()
+    }
+
+    /// The agent backend this job targets, and its resolved config.
+    /// `None` if no backend is configured under `agent` — the caller
+    /// decides whether that's an error (e.g. pickup can't launch without
+    /// one, but a still-`DRAFT` job may not have picked one yet).
+    pub fn backend(&self) -> Option<(AgentKind, &AgentConfig)> {
+        if let Some(config) = &self.agent.codex {
+            return Some((AgentKind::Codex, config));
+        }
+        None
     }
 
     pub fn load(path: &Path) -> anyhow::Result<AideJob> {

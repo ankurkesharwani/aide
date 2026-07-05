@@ -3,7 +3,7 @@ use std::path::Path;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::statusline::AgentState;
+use crate::agent::AgentState;
 
 /// `runtime.yml` — written and owned entirely by the watcher once a job is
 /// picked up. Holds everything discovered/assigned during execution that
@@ -11,14 +11,14 @@ use crate::statusline::AgentState;
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct RuntimeInfo {
     pub window: String,
+    /// Name of the agent backend running this job (e.g. `"codex"`), from
+    /// `AgentKind::name`.
+    #[serde(default)]
+    pub agent: Option<String>,
     #[serde(default)]
     pub session_id: Option<String>,
     #[serde(default)]
     pub model: Option<String>,
-    #[serde(default)]
-    pub thinking: Option<String>,
-    #[serde(default)]
-    pub speed: Option<String>,
     #[serde(default)]
     pub profile: Option<String>,
     #[serde(default)]
@@ -34,8 +34,8 @@ pub struct RuntimeInfo {
     #[serde(default)]
     pub awaiting_approval: bool,
     /// Set when the watcher can no longer find the job's tmux window/session,
-    /// or the window no longer runs Codex. Visibility-only: never fed back
-    /// into `aide.yml`'s `status`.
+    /// or the window no longer runs the job's agent. Visibility-only: never
+    /// fed back into `aide.yml`'s `status`.
     #[serde(default)]
     pub lost: bool,
     pub updated_at: DateTime<Utc>,
