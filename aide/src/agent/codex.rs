@@ -1,4 +1,4 @@
-use super::{AgentState, AgentStatus, AgentStrategy};
+use super::{AgentState, AgentStatus, AgentStrategy, shell_quote};
 use crate::job::AgentConfig;
 
 const AWAITING_APPROVAL_MARKER: &str = "Please enter to confirm or esc to cancel";
@@ -12,9 +12,13 @@ fn parse_state(s: &str) -> Option<AgentState> {
     }
 }
 
-/// The Codex CLI backend: invoked as `codex <arguments...>`, reports its
-/// state via a ` · `-separated statusline and an "awaiting approval"
-/// marker line for approval prompts (see `docs/spec.md`).
+/// The Codex CLI backend: invoked as `codex <arguments...> <prompt>` — the
+/// interactive TUI accepts an optional trailing `[PROMPT]` positional
+/// argument to start the session with (`codex --help`), which this uses
+/// instead of pasting the prompt into the pane after launch, avoiding a
+/// race against the TUI being ready to receive input. Reports its state
+/// via a ` · `-separated statusline and an "awaiting approval" marker line
+/// for approval prompts (see `docs/spec.md`).
 pub struct CodexAgent;
 
 impl AgentStrategy for CodexAgent {
@@ -22,12 +26,14 @@ impl AgentStrategy for CodexAgent {
         "codex"
     }
 
-    fn build_command(&self, config: &AgentConfig) -> String {
+    fn build_command(&self, config: &AgentConfig, prompt: &str) -> String {
         let mut cmd = String::from(self.binary());
         for arg in &config.arguments {
             cmd.push(' ');
             cmd.push_str(arg);
         }
+        cmd.push(' ');
+        cmd.push_str(&shell_quote(prompt));
         cmd
     }
 

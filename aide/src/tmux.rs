@@ -122,25 +122,3 @@ pub fn capture_pane(session: &str, window: &str) -> Result<String> {
     let target = format!("{session}:{window}");
     run(&["capture-pane", "-p", "-t", &target])
 }
-
-/// Feed multi-line `text` into `session:window` as if the user pasted it
-/// and pressed Enter. Uses a tmux paste buffer instead of `send-keys`
-/// directly so embedded newlines/special characters in the prompt don't
-/// need shell-style escaping.
-pub fn send_text(session: &str, window: &str, text: &str) -> Result<()> {
-    let target = format!("{session}:{window}");
-    let buffer_name = format!("aide-{}", std::process::id());
-
-    let mut tmp = std::env::temp_dir();
-    tmp.push(format!("{buffer_name}.txt"));
-    std::fs::write(&tmp, text)?;
-
-    run(&["load-buffer", "-b", &buffer_name, &tmp.to_string_lossy()])?;
-    let paste_result = run(&["paste-buffer", "-b", &buffer_name, "-t", &target]);
-    let _ = run(&["delete-buffer", "-b", &buffer_name]);
-    let _ = std::fs::remove_file(&tmp);
-    paste_result?;
-
-    run(&["send-keys", "-t", &target, "Enter"])?;
-    Ok(())
-}

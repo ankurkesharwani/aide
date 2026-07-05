@@ -61,8 +61,13 @@ pub trait AgentStrategy {
     fn binary(&self) -> &'static str;
 
     /// Build the shell command line used to launch this agent with the
-    /// job's resolved `arguments`.
-    fn build_command(&self, config: &AgentConfig) -> String;
+    /// job's resolved `arguments` and feed it `prompt` as its initial
+    /// input. How `prompt` gets in is backend-specific — Codex takes it as
+    /// a trailing positional CLI argument, but another backend might want
+    /// it piped via stdin or passed through a flag instead — which is why
+    /// this lives on the strategy rather than being a generic post-launch
+    /// "paste some text into the pane" step.
+    fn build_command(&self, config: &AgentConfig, prompt: &str) -> String;
 
     /// Whether a process's (lowercased) `/proc/<pid>/cmdline` indicates
     /// this agent is running, as opposed to a bare shell.
@@ -73,4 +78,12 @@ pub trait AgentStrategy {
 
     /// Independently detect an "awaiting approval" prompt in pane text.
     fn detect_awaiting_approval(&self, pane_text: &str) -> bool;
+}
+
+/// Escapes `s` for safe inclusion as a single word in a POSIX shell command
+/// line, using single quotes — the only quoting style that doesn't
+/// interpret any special character inside. Shared across backend
+/// implementations that need to embed a prompt into a shell command string.
+pub(crate) fn shell_quote(s: &str) -> String {
+    format!("'{}'", s.replace('\'', "'\\''"))
 }

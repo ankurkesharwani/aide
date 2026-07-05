@@ -165,10 +165,10 @@ fn assemble_prompt(job: &AideJob, job_dir: &Path) -> Result<String> {
     ))
 }
 
-/// Picks up an eligible, validated, non-colliding `READY` job: builds and
-/// sends its prompt, opens its tmux window, writes the initial
-/// `runtime.yml`, makes `aide.yml` read-only, and flips `status` to
-/// `RUNNING`.
+/// Picks up an eligible, validated, non-colliding `READY` job: builds its
+/// prompt, opens its tmux window with the agent launched directly against
+/// that prompt, writes the initial `runtime.yml`, makes `aide.yml`
+/// read-only, and flips `status` to `RUNNING`.
 pub fn pickup(session: &str, discovered: &DiscoveredJob) -> Result<()> {
     let job = &discovered.job;
     let root = Path::new(&job.root);
@@ -179,12 +179,10 @@ pub fn pickup(session: &str, discovered: &DiscoveredJob) -> Result<()> {
     let strategy = kind.strategy();
 
     let prompt = assemble_prompt(job, &discovered.dir)?;
-    let command = strategy.build_command(config);
+    let command = strategy.build_command(config, &prompt);
 
     tmux::new_window(session, &job.window, root, &command)
         .with_context(|| format!("failed to open tmux window '{}'", job.window))?;
-    tmux::send_text(session, &job.window, &prompt)
-        .with_context(|| format!("failed to feed prompt into window '{}'", job.window))?;
 
     let runtime = RuntimeInfo {
         window: job.window.clone(),
