@@ -156,6 +156,6 @@ pub fn run(workspace: PathBuf) -> Result<()> {
     let mut watcher = Watcher::new(workspace, session);
     loop {
         watcher.tick();
-        std::thread::sleep(std::time::Duration::from_secs(3));
+        std::thread::sleep(std::time::Duration::from_secs(15));
     }
 }

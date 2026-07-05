@@ -11,7 +11,7 @@ use crate::temp;
 use crate::tmux;
 
 /// One poll of a job whose `aide.yml` says `RUNNING`. Doubles as both the
-/// steady-state 3s statusline poll and the watcher's startup
+/// steady-state 15s statusline poll and the watcher's startup
 /// reconciliation check — there's no separate "is this job still alive"
 /// code path; every poll re-derives it from the tmux window's current
 /// state, per the spec's resilience model (no state kept beyond disk).
