@@ -1,9 +1,9 @@
 //! Abstracts everything about an agent CLI backend that differs from one
-//! to the next: how to invoke it, how to describe its resolved config in
-//! the system prompt, how to recognize its process in a tmux pane, and how
-//! to read its status back out of captured pane text. Codex is the only
-//! implementation for now (see `docs/spec.md`); `claude`, `gemini`, etc.
-//! are expected to join as sibling `AgentKind` variants later.
+//! to the next: how to invoke it, how to recognize its process in a tmux
+//! pane, and how to read its status back out of captured pane text. Codex
+//! is the only implementation for now (see `docs/spec.md`); `claude`,
+//! `gemini`, etc. are expected to join as sibling `AgentKind` variants
+//! later.
 
 mod codex;
 
@@ -63,10 +63,6 @@ pub trait AgentStrategy {
     /// Build the shell command line used to launch this agent with the
     /// job's resolved `arguments`.
     fn build_command(&self, config: &AgentConfig) -> String;
-
-    /// Fragment describing the resolved backend/arguments, appended to the
-    /// job's system prompt.
-    fn describe(&self, config: &AgentConfig) -> String;
 
     /// Whether a process's (lowercased) `/proc/<pid>/cmdline` indicates
     /// this agent is running, as opposed to a bare shell.

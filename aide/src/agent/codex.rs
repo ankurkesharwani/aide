@@ -31,18 +31,6 @@ impl AgentStrategy for CodexAgent {
         cmd
     }
 
-    fn describe(&self, config: &AgentConfig) -> String {
-        if config.arguments.is_empty() {
-            format!("## Model\nagent: {}", self.binary())
-        } else {
-            format!(
-                "## Model\nagent: {}\narguments: {}",
-                self.binary(),
-                config.arguments.join(" ")
-            )
-        }
-    }
-
     fn process_matches(&self, cmdline_lower: &str) -> bool {
         cmdline_lower.contains("codex")
     }
