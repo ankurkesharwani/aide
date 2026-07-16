@@ -7,7 +7,7 @@ description: Use when the user gives a specification/requirements doc and wants 
 
 Turn a specification into one or more `task.yml` + prompt-file job directories
 for the amit watcher (see `README.md`, `docs/spec.md`, `docs/task.yml`, and
-the `AmitJob` struct in `amit/src/job.rs` for the authoritative schema — reread
+the `AmitJob` struct in `src/job.rs` for the authoritative schema — reread
 whichever of these you need, this skill only summarizes them). Never launch
 anything yourself; you are authoring files for the watcher to pick up later.
 
@@ -151,7 +151,7 @@ directories side by side (the scanner globs recursively, so nesting under a
 spec-named parent is fine).
 
 Fill `task.yml` per the schema (`docs/task.yml`, `AmitJob` in
-`amit/src/job.rs`):
+`src/job.rs`):
 
 - `title`, `id`, `window` — from step 6.
 - `status: DRAFT` — always; see step 8.
@@ -186,7 +186,7 @@ Write `prompt.md` as task-specific instructions only:
   noise.
 
 Before considering a task done, check it against what
-`amit/src/validator.rs` enforces (there's no `amit validate` command yet,
+`src/validator.rs` enforces (there's no `amit validate` command yet,
 so this is a manual pass): `title`/`id`/`window`/`root`/`prompt-file`
 non-empty, `status` one of `DRAFT`/`READY`/`RUNNING`/`DONE`/`SUCCESS`/
 `FAILURE`, `executeAfter` RFC3339 if present, every `dirs`/`git` entry has
