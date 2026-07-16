@@ -7,7 +7,7 @@ use crate::agent::AgentState;
 
 /// `runtime.yml` — written and owned entirely by the watcher once a job is
 /// picked up. Holds everything discovered/assigned during execution that
-/// doesn't belong in the (post-pickup, read-only) `aide.yml`.
+/// doesn't belong in the (post-pickup, read-only) `task.yml`.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct RuntimeInfo {
     pub window: String,
@@ -35,7 +35,7 @@ pub struct RuntimeInfo {
     pub awaiting_approval: bool,
     /// Set when the watcher can no longer find the job's tmux window/session,
     /// or the window no longer runs the job's agent. Visibility-only: never
-    /// fed back into `aide.yml`'s `status`.
+    /// fed back into `task.yml`'s `status`.
     #[serde(default)]
     pub lost: bool,
     pub updated_at: DateTime<Utc>,

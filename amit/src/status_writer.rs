@@ -11,7 +11,7 @@ const READ_ONLY: u32 = 0o444;
 const OWNER_WRITABLE: u32 = 0o644;
 
 /// Called once, right after pickup: from this point on the watcher is the
-/// only writer to `aide.yml`, and `status` is the only field it will ever
+/// only writer to `task.yml`, and `status` is the only field it will ever
 /// touch. Everyone else (including the user's editor) only gets read
 /// access.
 pub fn make_read_only(spec_path: &Path) -> Result<()> {

@@ -10,7 +10,7 @@ use crate::status_writer;
 use crate::temp;
 use crate::tmux;
 
-/// One poll of a job whose `aide.yml` says `RUNNING`. Doubles as both the
+/// One poll of a job whose `task.yml` says `RUNNING`. Doubles as both the
 /// steady-state 15s statusline poll and the watcher's startup
 /// reconciliation check — there's no separate "is this job still alive"
 /// code path; every poll re-derives it from the tmux window's current
@@ -21,7 +21,7 @@ pub fn poll_running_job(session: &str, discovered: &DiscoveredJob) -> Result<()>
 
     let Some((kind, _config)) = discovered.job.backend() else {
         // A RUNNING job should always have an agent backend — pickup
-        // requires one — but guard rather than panic if aide.yml was
+        // requires one — but guard rather than panic if task.yml was
         // hand-edited after pickup.
         return Ok(());
     };

@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 use chrono::Utc;
 
 use crate::agent::AgentState;
-use crate::job::{AideJob, JobStatus};
+use crate::job::{AmitJob, JobStatus};
 use crate::logging;
 use crate::runtime::RuntimeInfo;
 use crate::scanner::DiscoveredJob;
@@ -30,7 +30,7 @@ fn absolute(job_dir: &Path) -> PathBuf {
 /// Concatenates the job's `dirs`/`git` context, the workspace-folder
 /// convention, and the `.temp`-reporting instruction into a system prompt
 /// preamble for the job's agent.
-fn build_system_prompt(job: &AideJob, job_dir: &Path) -> String {
+fn build_system_prompt(job: &AmitJob, job_dir: &Path) -> String {
     let mut sections = Vec::new();
 
     sections.push(format!("# Task: {}", job.title));
@@ -43,7 +43,7 @@ fn build_system_prompt(job: &AideJob, job_dir: &Path) -> String {
     ));
 
     sections.push(
-        "## Operating context\nYou were launched by aide's watcher — a \
+        "## Operating context\nYou were launched by amit's watcher — a \
          background program that scans a workspace for job specs and runs \
          each one, unattended, in its own tmux session; \"the watcher\" \
          elsewhere in this prompt refers to it. No one is watching this \
@@ -151,7 +151,7 @@ fn outcome_temp_path(job_dir: &Path) -> String {
 /// Used to pre-trust them all with the backend before launch (see
 /// `AgentStrategy::prepare`) — cheaper to over-include a few than to miss
 /// one and have the job hang on an onboarding prompt.
-fn job_paths(job: &AideJob) -> Vec<PathBuf> {
+fn job_paths(job: &AmitJob) -> Vec<PathBuf> {
     let mut paths = vec![PathBuf::from(&job.root)];
     paths.extend(job.dirs.iter().map(|d| PathBuf::from(&d.dir)));
     for g in &job.git {
@@ -169,7 +169,7 @@ fn job_paths(job: &AideJob) -> Vec<PathBuf> {
 /// the agent starts working, rather than relying solely on the system
 /// preamble — an instruction given once, before a long task, is exactly
 /// the kind of thing a model can let slip by the time it wraps up.
-fn assemble_prompt(job: &AideJob, job_dir: &Path) -> Result<String> {
+fn assemble_prompt(job: &AmitJob, job_dir: &Path) -> Result<String> {
     let prompt_path = job_dir.join(&job.prompt_file);
     let prompt_body = std::fs::read_to_string(&prompt_path)
         .with_context(|| format!("failed to read prompt-file {}", prompt_path.display()))?;
@@ -184,7 +184,7 @@ fn assemble_prompt(job: &AideJob, job_dir: &Path) -> Result<String> {
 
 /// Picks up an eligible, validated, non-colliding `READY` job: builds its
 /// prompt, opens its tmux window with the agent launched directly against
-/// that prompt, writes the initial `runtime.yml`, makes `aide.yml`
+/// that prompt, writes the initial `runtime.yml`, makes `task.yml`
 /// read-only, and flips `status` to `RUNNING`.
 pub fn pickup(session: &str, discovered: &DiscoveredJob) -> Result<()> {
     let job = &discovered.job;

@@ -1,6 +1,6 @@
-# aide
+# amit
 
-**aide** is a filesystem-driven orchestrator for background coding-agent
+**amit** is a filesystem-driven orchestrator for background coding-agent
 jobs. Author a job as a small YAML file plus a prompt, mark it `READY`,
 and a watcher process launches the agent (currently
 [Codex](https://github.com/openai/codex)) in its own tmux window and
@@ -20,12 +20,12 @@ the tasks being offloaded actually need.
 
 ## Philosophy
 
-aide is built to be native to the terminal and tmux, rather than requiring
+amit is built to be native to the terminal and tmux, rather than requiring
 a separate UI to manage agents. It draws a clear line between two
 decisions that otherwise get tangled together: what to do yourself versus
-what to hand off, and how whatever gets handed off actually runs. aide only
+what to hand off, and how whatever gets handed off actually runs. amit only
 takes care of the second part — what's worth offloading is still entirely
-up to the user; aide just makes sure that once something is offloaded, it
+up to the user; amit just makes sure that once something is offloaded, it
 gets launched, tracked, and reported on automatically.
 
 Anything offloaded stays a tmux window away: attach to it and continue the
@@ -47,8 +47,8 @@ juggling terminal tabs and sessions so nothing got lost. None of that was
 the actual work — it was overhead *around* the work, and it was draining
 more energy than the tasks I was actually offloading.
 
-> So I built aide to stay out of the way: I decide what to do myself and
-what to offload, and aide takes care of getting whatever I offload
+> So I built amit to stay out of the way: I decide what to do myself and
+what to offload, and amit takes care of getting whatever I offload
 launched, tracked, and reported on, without me having to hold any of that
 in my head. If I ever need to check in on something, it's still just a
 tmux window away — I can attach to it and keep talking to that same agent
@@ -56,7 +56,7 @@ without losing any context, exactly as if I'd started it myself.
 
 ## How it works
 
-1. **Write a job.** An `aide.yml` file plus a prompt file (see the example
+1. **Write a job.** A `task.yml` file plus a prompt file (see the example
    below), living together in their own directory anywhere in your
    workspace.
 2. **Mark it ready.** Set `status: READY` (jobs start as `DRAFT` while
@@ -64,7 +64,7 @@ without losing any context, exactly as if I'd started it myself.
    `executeAfter` time, it only becomes eligible once those are satisfied.
 3. **Run the watcher**, from inside a tmux session:
    ```bash
-   aide path/to/workspace
+   amit path/to/workspace
    ```
 4. **It takes it from there.** The watcher opens a new tmux window (it
    won't steal your focus) and launches your configured agent in it, with
@@ -84,7 +84,7 @@ work ("do X, then once X succeeds, do Y") just by wiring up ids.
 
 ## Example
 
-`aide.yml`:
+`task.yml`:
 
 ```yaml
 title: Fix flaky auth test
@@ -139,7 +139,7 @@ supported so far.
 ```bash
 cargo build --release
 # from inside a tmux session:
-./target/release/aide path/to/workspace
+./target/release/amit path/to/workspace
 ```
 
 Author your job directories under `path/to/workspace`, flip each one to
@@ -150,7 +150,7 @@ on its next pass.
 
 Early, single-user project, evolving quickly. Codex is the only supported
 agent backend today, with room to add others (Claude, Gemini, ...) later.
-`aide` is just the watcher for now — you author `aide.yml`/prompt files by
+`amit` is just the watcher for now — you author `task.yml`/prompt files by
 hand; job-scaffolding and other CLI conveniences are expected to land as
 subcommands on the same binary later.
 

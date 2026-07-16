@@ -15,11 +15,11 @@ use std::path::PathBuf;
 
 use clap::Parser;
 
-/// aide — filesystem-driven agent orchestrator watcher.
+/// amit — filesystem-driven agent orchestrator watcher.
 #[derive(Parser)]
-#[command(name = "aide")]
+#[command(name = "amit")]
 struct Cli {
-    /// Path to the workspace root to watch for `aide.yml` job specs.
+    /// Path to the workspace root to watch for `task.yml` job specs.
     workspace: PathBuf,
 }
 

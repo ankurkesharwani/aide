@@ -6,12 +6,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::agent::AgentKind;
 
-/// Raw representation of an `aide.yml` job spec. Fields that the schema
-/// draft (`docs/aide.yml`) documents as enums are kept as plain `String`s
+/// Raw representation of an `task.yml` job spec. Fields that the schema
+/// draft (`docs/task.yml`) documents as enums are kept as plain `String`s
 /// here so a job with an invalid value still parses — the validator is
 /// what decides whether an enum value is acceptable, not serde.
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct AideJob {
+pub struct AmitJob {
     pub title: String,
     pub id: String,
     pub window: String,
@@ -53,7 +53,7 @@ pub struct GitEntry {
     pub worktree: Option<String>,
 }
 
-/// The `agent:` block of `aide.yml`. `codex` is the only backend for now;
+/// The `agent:` block of `task.yml`. `codex` is the only backend for now;
 /// `claude`, `gemini`, etc. are expected to join as sibling keys later
 /// (see `docs/spec.md`).
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
@@ -72,7 +72,7 @@ pub struct AgentConfig {
     pub arguments: Vec<String>,
 }
 
-/// The set of allowed values for `status`. Kept separate from `AideJob`
+/// The set of allowed values for `status`. Kept separate from `AmitJob`
 /// (which stores `status` as a raw `String`) so an on-disk value outside
 /// this set is a validation failure rather than a parse failure.
 ///
@@ -121,7 +121,7 @@ impl fmt::Display for JobStatus {
     }
 }
 
-impl AideJob {
+impl AmitJob {
     pub fn status(&self) -> Option<JobStatus> {
         self.status.parse().ok()
     }
@@ -137,9 +137,9 @@ impl AideJob {
         None
     }
 
-    pub fn load(path: &Path) -> anyhow::Result<AideJob> {
+    pub fn load(path: &Path) -> anyhow::Result<AmitJob> {
         let text = std::fs::read_to_string(path)?;
-        let job: AideJob = serde_yaml::from_str(&text)?;
+        let job: AmitJob = serde_yaml::from_str(&text)?;
         Ok(job)
     }
 }

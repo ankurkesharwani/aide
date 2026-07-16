@@ -1,11 +1,11 @@
 use chrono::{DateTime, Utc};
 
-use crate::job::AideJob;
+use crate::job::AmitJob;
 
-/// Checks a parsed job against the `aide.yml` schema: required fields
+/// Checks a parsed job against the `task.yml` schema: required fields
 /// present, enum-valued fields hold one of their allowed values. Pure
 /// function — it has no opinion on what the watcher does with the result.
-pub fn validate(job: &AideJob) -> Result<(), Vec<String>> {
+pub fn validate(job: &AmitJob) -> Result<(), Vec<String>> {
     let mut errors = Vec::new();
 
     if job.title.trim().is_empty() {

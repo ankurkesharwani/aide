@@ -149,9 +149,11 @@ impl Watcher {
 
 pub fn run(workspace: PathBuf) -> Result<()> {
     if !crate::tmux::in_tmux() {
-        anyhow::bail!("aide watcher must be run from inside a tmux session");
+        anyhow::bail!("amit watcher must be run from inside a tmux session");
     }
     let session = crate::tmux::current_session()?;
+
+    logging::banner();
 
     let mut watcher = Watcher::new(workspace, session);
     loop {

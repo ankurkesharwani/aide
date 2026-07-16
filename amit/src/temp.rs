@@ -5,13 +5,13 @@ use serde::Deserialize;
 use crate::job::JobStatus;
 
 /// Filename of the agent-writable scratch file inside a job's directory,
-/// sibling to `aide.yml`/`runtime.yml`/the prompt file. A simple key/value
+/// sibling to `task.yml`/`runtime.yml`/the prompt file. A simple key/value
 /// YAML document with a small set of defined keys the agent may fill in to
 /// communicate back to the watcher — currently just `outcome`, with more
 /// expected to be added here as the need arises. Written by the agent per
 /// the instruction appended to its system prompt (see
 /// `pickup::build_system_prompt`); the watcher only ever reads it, so
-/// there's no write-write race with `aide.yml` (watcher-owned, read-only
+/// there's no write-write race with `task.yml` (watcher-owned, read-only
 /// post-pickup) or `runtime.yml` (rewritten wholesale on every poll).
 pub const FILE_NAME: &str = ".temp";
 

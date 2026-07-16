@@ -1,13 +1,13 @@
 ---
-name: aide-tasks
-description: Use when the user gives a specification/requirements doc and wants it turned into aide jobs — e.g. "turn this spec into aide tasks", "break this down into aide jobs", "create aide tasks for X", "author aide.yml files for this", or any request to plan/schedule work for the aide watcher. Covers evaluating the spec for ambiguity/completeness, decomposing it into a serial/parallel task graph, and authoring aide.yml + prompt files in DRAFT so the user decides when each one runs.
+name: amit-tasks
+description: Use when the user gives a specification/requirements doc and wants it turned into amit jobs — e.g. "turn this spec into amit tasks", "break this down into amit jobs", "create amit tasks for X", "author task.yml files for this", or any request to plan/schedule work for the amit watcher. Covers evaluating the spec for ambiguity/completeness, decomposing it into a serial/parallel task graph, and authoring task.yml + prompt files in DRAFT so the user decides when each one runs.
 ---
 
-# aide-tasks
+# amit-tasks
 
-Turn a specification into one or more `aide.yml` + prompt-file job directories
-for the aide watcher (see `README.md`, `docs/spec.md`, `docs/aide.yml`, and
-the `AideJob` struct in `aide/src/job.rs` for the authoritative schema — reread
+Turn a specification into one or more `task.yml` + prompt-file job directories
+for the amit watcher (see `README.md`, `docs/spec.md`, `docs/task.yml`, and
+the `AmitJob` struct in `amit/src/job.rs` for the authoritative schema — reread
 whichever of these you need, this skill only summarizes them). Never launch
 anything yourself; you are authoring files for the watcher to pick up later.
 
@@ -21,10 +21,10 @@ shared repo before anyone notices.
 
 ## 1. Find the workspace
 
-Figure out which directory is the aide workspace (the argument the user
-passes to `aide path/to/workspace`) — ask if it isn't obvious from context.
-Then recursively scan it for existing `aide.yml` files (same glob the
-scanner uses: `<workspace>/**/aide.yml`) and record every `id` and `window`
+Figure out which directory is the amit workspace (the argument the user
+passes to `amit path/to/workspace`) — ask if it isn't obvious from context.
+Then recursively scan it for existing `task.yml` files (same glob the
+scanner uses: `<workspace>/**/task.yml`) and record every `id` and `window`
 already in use. Uniqueness is workspace-wide and silent — the watcher just
 refuses to schedule a colliding job — so this set has to include *every*
 existing job, not just ones related to this spec.
@@ -146,12 +146,12 @@ string.
 
 ## 7. Author the files
 
-Layout: `<workspace>/<spec-slug>/<task-id>/aide.yml` and `prompt.md`,
+Layout: `<workspace>/<spec-slug>/<task-id>/task.yml` and `prompt.md`,
 directories side by side (the scanner globs recursively, so nesting under a
 spec-named parent is fine).
 
-Fill `aide.yml` per the schema (`docs/aide.yml`, `AideJob` in
-`aide/src/job.rs`):
+Fill `task.yml` per the schema (`docs/task.yml`, `AmitJob` in
+`amit/src/job.rs`):
 
 - `title`, `id`, `window` — from step 6.
 - `status: DRAFT` — always; see step 8.
@@ -186,7 +186,7 @@ Write `prompt.md` as task-specific instructions only:
   noise.
 
 Before considering a task done, check it against what
-`aide/src/validator.rs` enforces (there's no `aide validate` command yet,
+`amit/src/validator.rs` enforces (there's no `amit validate` command yet,
 so this is a manual pass): `title`/`id`/`window`/`root`/`prompt-file`
 non-empty, `status` one of `DRAFT`/`READY`/`RUNNING`/`DONE`/`SUCCESS`/
 `FAILURE`, `executeAfter` RFC3339 if present, every `dirs`/`git` entry has
