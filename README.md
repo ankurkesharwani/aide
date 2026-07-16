@@ -1,6 +1,23 @@
 # amit
 
-**amit** is a filesystem-driven orchestrator for background coding-agent
+```
+ █████████                    ███   █████
+  ███░░░░░███                  ░░░   ░░███
+ ░███    ░███  █████████████   ████  ███████
+ ░███████████ ░░███░░███░░███ ░░███ ░░░███░
+ ░███░░░░░███  ░███ ░███ ░███  ░███   ░███
+ ░███    ░███  ░███ ░███ ░███  ░███   ░███ ███
+ █████   █████ █████░███ █████ █████  ░░█████
+░░░░░   ░░░░░ ░░░░░ ░░░ ░░░░░ ░░░░░    ░░░░░
+```
+
+**Amit** is short for **A**gent **m**ultiplexer **i**n **t**mux. It's also a
+popular Hindi name meaning boundless, infinite, or immeasurable — fitting
+for a tool meant to let you run as many agents as you need without it ever
+feeling like a hassle to keep track of them. Pronounced **Aa-mi-t**
+(/əˈmiːt/).
+
+**Amit** is a filesystem-driven orchestrator for background coding-agent
 jobs. Author a job as a small YAML file plus a prompt, mark it `READY`,
 and a watcher process launches the agent (currently
 [Codex](https://github.com/openai/codex)) in its own tmux window and
